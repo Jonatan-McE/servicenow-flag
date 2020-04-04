@@ -26,3 +26,5 @@ Optionnal arguments:
 - -v / SNF_VERBOSE (Verbose mode)
 - -low / SNF_LOW (Low value for number of serivce now tickets)
 - -high / SNF_HIGH (High value for number of serivce now tickets)
+
+Updated 2020-04-04
