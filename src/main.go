@@ -26,6 +26,7 @@ var opts struct {
 
 var luxaforBaseURL string = "https://api.luxafor.com/webhook/v1/actions/"
 var serviceNowBaseURL string = "https://servicenow.com/api/now/table/task?"
+var verbose bool
 
 func main() {
 	var luxID string = os.Getenv("SNF_LUXID")
@@ -34,7 +35,6 @@ func main() {
 	var snAssigngroup string = os.Getenv("SNF_SNASSIGNGROUP")
 	var low int
 	var high int
-	var verbose bool
 	var err error
 	if low, err = strconv.Atoi(os.Getenv("SNF_LOW")); err != nil {
 		low = 1
@@ -129,7 +129,7 @@ func main() {
 	log("Application starting...")
 
 	// Reset flag status at startup
-	err = queryLuxafor(luxID, "000000", "solid_color", verbose)
+	err = queryLuxafor(luxID, "000000", "solid_color")
 	if err != nil {
 		log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
 	}
@@ -145,7 +145,7 @@ func main() {
 		}
 		numOfCycles++
 
-		currentNum, err := queryServiceNow(snUser, snPass, snAssigngroup, verbose)
+		currentNum, err := queryServiceNow(snUser, snPass, snAssigngroup)
 		if err != nil {
 			log(fmt.Sprintf("API call failed with error: %s", err))
 			continue
@@ -163,21 +163,21 @@ func main() {
 
 		if currentNum != previousNum || numOfCycles > 11 {
 			if currentNum != previousNum {
-				err = queryLuxafor(luxID, flagColor, "blink", verbose)
+				err = queryLuxafor(luxID, flagColor, "blink")
 				if err != nil {
 					log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
 					return
 				}
 				// Add a 3 sec delay to space out multiple POST requeests
 				time.Sleep(3 * time.Second)
-				err = queryLuxafor(luxID, flagColor, "solid_color", verbose)
+				err = queryLuxafor(luxID, flagColor, "solid_color")
 				if err != nil {
 					log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
 					return
 				}
 				log(fmt.Sprintf("%d tickets in queue (Flag update)", currentNum))
 			} else {
-				err = queryLuxafor(luxID, flagColor, "solid_color", verbose)
+				err = queryLuxafor(luxID, flagColor, "solid_color")
 				if err != nil {
 					log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
 					return
@@ -193,7 +193,7 @@ func main() {
 
 }
 
-func queryServiceNow(user string, pass string, assignGroup string, verbose bool) (int, error) {
+func queryServiceNow(user string, pass string, assignGroup string) (int, error) {
 	type SNQueue struct {
 		Result []struct {
 			ID string `json:"number"`
@@ -257,7 +257,7 @@ func queryServiceNow(user string, pass string, assignGroup string, verbose bool)
 	return len(snQueue.Result), nil
 }
 
-func queryLuxafor(id string, color string, action string, verbose bool) error {
+func queryLuxafor(id string, color string, action string) error {
 	json := []byte(fmt.Sprintf("{\"userId\":\"%s\",\"actionFields\":{\"color\":\"custom\",\"custom_color\":\"%s\"}}", id, color))
 
 	url := (luxaforBaseURL + action)
