@@ -8,13 +8,14 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	flags "github.com/jessevdk/go-flags"
 )
 
 var opts struct {
-	LuxID             string `short:"l" long:"luxaforapiid" description:"ServiceNow account username " value-name:"<luxid>"`
+	LuxID             string `short:"l" long:"luxaforapiid" description:"Luxafor API key ID (comma seperated ID's are supported)" value-name:"<luxid>"`
 	SNUsername        string `short:"u" long:"username" description:"ServiceNow account username " value-name:"<username>"`
 	SNPassword        string `short:"p" long:"password" description:"ServiceNow account password " value-name:"<password>"`
 	SNAssignmentGroup string `short:"a" long:"assignmentgroup" description:"ServiceNow account assignment-group " value-name:"<assignmentgroup>"`
@@ -77,10 +78,12 @@ func main() {
 		high = opts.High
 	}
 
+	luxIDs := strings.Split(luxID, ",")
+
 	// Check for missing variables
-	if luxID != "" {
+	if len(luxIDs) > 0 {
 		if verbose {
-			log("Luxafor API ID is set")
+			log(fmt.Sprintf("Luxafor API ID is set (%s)", luxIDs))
 		}
 	} else {
 		log("Luxafor API ID is NOT set!")
@@ -129,9 +132,11 @@ func main() {
 	log("Application starting...")
 
 	// Reset flag status at startup
-	err = queryLuxafor(luxID, "000000", "solid_color")
-	if err != nil {
-		log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
+	for _, id := range luxIDs {
+		err = queryLuxafor(id, "000000", "solid_color")
+		if err != nil {
+			log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
+		}
 	}
 
 	// Loop status-check every 5 min
@@ -163,24 +168,30 @@ func main() {
 
 		if currentNum != previousNum || numOfCycles > 11 {
 			if currentNum != previousNum {
-				err = queryLuxafor(luxID, flagColor, "blink")
-				if err != nil {
-					log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
-					return
+				for _, id := range luxIDs {
+					err = queryLuxafor(id, flagColor, "blink")
+					if err != nil {
+						log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
+						return
+					}
 				}
 				// Add a 3 sec delay to space out multiple POST requeests
 				time.Sleep(3 * time.Second)
-				err = queryLuxafor(luxID, flagColor, "solid_color")
-				if err != nil {
-					log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
-					return
+				for _, id := range luxIDs {
+					err = queryLuxafor(id, flagColor, "solid_color")
+					if err != nil {
+						log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
+						return
+					}
 				}
 				log(fmt.Sprintf("%d tickets in queue (Flag update)", currentNum))
 			} else {
-				err = queryLuxafor(luxID, flagColor, "solid_color")
-				if err != nil {
-					log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
-					return
+				for _, id := range luxIDs {
+					err = queryLuxafor(id, flagColor, "solid_color")
+					if err != nil {
+						log(fmt.Sprintf("Failed to updatge flag with error: %s", err))
+						return
+					}
 				}
 				log(fmt.Sprintf("%d tickets in queue (Periodic flage update)", currentNum))
 			}
