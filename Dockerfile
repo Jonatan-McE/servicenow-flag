@@ -1,7 +1,8 @@
 FROM golang:alpine AS build_stage
 RUN apk update && apk add git && rm -rf /var/cache/apk/*
-COPY ./src ./src
-RUN go get -d -v ./src/ && go build -o ./bin/serviceNowFlag -v ./src/
+WORKDIR /go/src
+COPY ./src .
+RUN go mod init main && go mod tidy && go get -d -v . && go build -o /go/bin/serviceNowFlag -v .
 
 FROM alpine:latest
 WORKDIR /root/
